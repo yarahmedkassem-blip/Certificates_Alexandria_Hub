@@ -15,7 +15,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
-# 1. تحديد المسار المباشر لمجلد Web ليعمل على Vercel
+# 1. تحديد المسار المباشر لمجلد Web
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEB_DIR = os.path.join(BASE_DIR, 'Web')
 
@@ -26,18 +26,8 @@ app = Flask(
     static_url_path=''
 )
 
-# تعيين كائن app ليكون متاحاً لـ Vercel Serverless Handler
-app_handler = app
-
-# استخدام المجلد المؤقت الخاص بـ Vercel للحفظ المؤقت
-UPLOAD_FOLDER = '/tmp/uploads' if os.environ.get('VERCEL') else 'uploads'
-
-def ensure_upload_folder():
-    """إنشاء المجلد المؤقت بأمان بدون إحداث خطأ في البيئة السحابية"""
-    try:
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    except Exception:
-        pass
+# تحديد مجلد الحفظ المؤقت الآمن لبيئة Vercel
+UPLOAD_FOLDER = '/tmp/uploads'
 
 def get_drive_service():
     """تهيئة والاتصال بـ Google Drive API باستخدام الـ Service Account Key"""
@@ -76,7 +66,7 @@ def process_arabic_text(text):
 def clean_filename(name):
     return re.sub(r'[\\/*?:"<>|]', '', str(name)).strip()
 
-# 2. حل مشكلة 404 وقراءة الواجهة بنجاح
+# الصفحة الرئيسية
 @app.route('/')
 def index():
     return send_from_directory(WEB_DIR, 'index.html')
@@ -84,7 +74,9 @@ def index():
 @app.route('/generate', methods=['POST'])
 def generate_certificates():
     try:
-        ensure_upload_folder()
+        # إنشاء المجلد المؤقت بأمان عند استلام الطلب فقط
+        if not os.path.exists(UPLOAD_FOLDER):
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
         if 'template' not in request.files or 'csv' not in request.files or 'font' not in request.files:
             return jsonify({'success': False, 'message': 'يرجى رفع جميع الملفات المطلوبة.'})
