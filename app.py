@@ -63,7 +63,7 @@ def generate_certificates():
         clean_custom = re.sub(r'[\\/*?:"<>|]', '', str(custom_folder_name)).strip() if custom_folder_name else ''
         sub_folder_name = f"{clean_custom}_{run_timestamp}" if clean_custom else f"Certificates_Run_{run_timestamp}"
 
-        # إنشاء المجلد مع دعم المشاركة والـ Shared Drives
+        # إنشاء المجلد الفرعي داخل المجلد المشارك
         folder_metadata = {
             'name': sub_folder_name,
             'mimeType': 'application/vnd.google-apps.folder',
@@ -102,9 +102,9 @@ def generate_certificates():
 
                 safe_filename = re.sub(r'[\\/*?:"<>|]', '', str(raw_name)).strip() + ".png"
                 
-                media = MediaIoBaseUpload(img_byte_arr, mimetype='image/png', resumable=True)
+                media = MediaIoBaseUpload(img_byte_arr, mimetype='image/png', resumable=False)
                 
-                # الرفع مع خاصية supportsAllDrives لتجاوز حصة التخزين
+                # رفع الملف مع تحديد المعلمات المطلوبة لتجنب خطأ المساحة
                 drive_service.files().create(
                     body={'name': safe_filename, 'parents': [target_folder_id]},
                     media_body=media,
