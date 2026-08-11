@@ -3,34 +3,30 @@ import os
 import re
 import json
 from datetime import datetime
-import arabic_reshaper
-from bidi.algorithm import get_display
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
+
+# مكتبات معالجة النص العربي
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 # مكتبات Google Drive API
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
-# 1. تحديد المسار المباشر لمجلد Web
+# تحديد المسارات
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEB_DIR = os.path.join(BASE_DIR, 'Web')
 
-app = Flask(
-    __name__,
-    template_folder=WEB_DIR,
-    static_folder=WEB_DIR,
-    static_url_path=''
-)
+app = Flask(__name__, static_folder=WEB_DIR, static_url_path='')
 
-# تحديد مجلد الحفظ المؤقت الآمن لبيئة Vercel
-UPLOAD_FOLDER = '/tmp/uploads'
+# مجلد المؤقت الخاص بـ Vercel
+UPLOAD_FOLDER = '/tmp'
 
 def get_drive_service():
-    """تهيئة والاتصال بـ Google Drive API باستخدام الـ Service Account Key"""
     creds_json = os.environ.get('GOOGLE_SERVICE_ACCOUNT_KEY')
     if not creds_json:
         raise Exception("لم يتم العثور على متغير البيئة GOOGLE_SERVICE_ACCOUNT_KEY")
@@ -41,7 +37,6 @@ def get_drive_service():
     return build('drive', 'v3', credentials=creds)
 
 def create_drive_folder(service, folder_name, parent_folder_id):
-    """إنشاء مجلد فرعي داخل مجلد Google Drive"""
     file_metadata = {
         'name': folder_name,
         'mimeType': 'application/vnd.google-apps.folder',
@@ -51,7 +46,6 @@ def create_drive_folder(service, folder_name, parent_folder_id):
     return folder.get('id')
 
 def upload_file_to_drive(service, file_stream, filename, parent_folder_id):
-    """رفع صورة الشهادة مباشرة إلى Google Drive دون حفظها على القرص الصلب"""
     file_metadata = {
         'name': filename,
         'parents': [parent_folder_id]
@@ -66,24 +60,22 @@ def process_arabic_text(text):
 def clean_filename(name):
     return re.sub(r'[\\/*?:"<>|]', '', str(name)).strip()
 
-# الصفحة الرئيسية
 @app.route('/')
 def index():
-    return send_from_directory(WEB_DIR, 'index.html')
+    # التأكد من وجود ملف index.html في مجلد Web
+    if os.path.exists(os.path.join(WEB_DIR, 'index.html')):
+        return send_from_directory(WEB_DIR, 'index.html')
+    return "مرحباً! ملف index.html غير موجود داخل مجلد Web.", 404
 
 @app.route('/generate', methods=['POST'])
 def generate_certificates():
     try:
-        # إنشاء المجلد المؤقت بأمان عند استلام الطلب فقط
-        if not os.path.exists(UPLOAD_FOLDER):
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
         if 'template' not in request.files or 'csv' not in request.files or 'font' not in request.files:
             return jsonify({'success': False, 'message': 'يرجى رفع جميع الملفات المطلوبة.'})
 
         drive_folder_id = request.form.get('drive_folder_id', '').strip()
         if not drive_folder_id:
-            return jsonify({'success': False, 'message': 'يرجى إدخال معرف مجلد Google Drive (Folder ID).'})
+            return jsonify({'success': False, 'message': 'يرجى إدخال معرف مجلد Google Drive.'})
 
         template_file = request.files['template']
         csv_file = request.files['csv']
@@ -91,16 +83,10 @@ def generate_certificates():
 
         custom_folder_name = request.form.get('folder_name', '').strip()
 
-        if template_file.filename == '' or csv_file.filename == '' or font_file.filename == '':
-            return jsonify({'success': False, 'message': 'يرجى اختيار ملفات صالحة.'})
-
-        template_filename = secure_filename(template_file.filename) or 'template.png'
-        csv_filename = secure_filename(csv_file.filename) or 'names.csv'
-        font_filename = secure_filename(font_file.filename) or 'font.ttf'
-
-        template_path = os.path.join(UPLOAD_FOLDER, template_filename)
-        csv_path = os.path.join(UPLOAD_FOLDER, csv_filename)
-        font_path = os.path.join(UPLOAD_FOLDER, font_filename)
+        # حفظ الملفات مباشرة في /tmp
+        template_path = os.path.join(UPLOAD_FOLDER, secure_filename(template_file.filename) or 'template.png')
+        csv_path = os.path.join(UPLOAD_FOLDER, secure_filename(csv_file.filename) or 'names.csv')
+        font_path = os.path.join(UPLOAD_FOLDER, secure_filename(font_file.filename) or 'font.ttf')
 
         template_file.save(template_path)
         csv_file.save(csv_path)
@@ -109,10 +95,7 @@ def generate_certificates():
         drive_service = get_drive_service()
 
         run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        if custom_folder_name:
-            sub_folder_name = f"{clean_filename(custom_folder_name)}_{run_timestamp}"
-        else:
-            sub_folder_name = f"Certificates_Run_{run_timestamp}"
+        sub_folder_name = f"{clean_filename(custom_folder_name)}_{run_timestamp}" if custom_folder_name else f"Certificates_Run_{run_timestamp}"
 
         target_folder_id = create_drive_folder(drive_service, sub_folder_name, drive_folder_id)
 
@@ -120,7 +103,6 @@ def generate_certificates():
         names = df[df.columns[0]].dropna().astype(str).str.strip()
 
         count = 0
-
         for raw_name in names:
             if not raw_name or raw_name.lower() == 'nan':
                 continue
@@ -134,31 +116,19 @@ def generate_certificates():
                 x_center = img.width / 2
                 y_center = img.height / 2
 
-                draw.text(
-                    (x_center, y_center),
-                    processed_name,
-                    fill='#003366',
-                    font=font,
-                    anchor='mm'
-                )
+                draw.text((x_center, y_center), processed_name, fill='#003366', font=font, anchor='mm')
 
                 img_byte_arr = io.BytesIO()
                 img.save(img_byte_arr, format='PNG')
                 img_byte_arr.seek(0)
 
-                safe_name = clean_filename(raw_name)
-                filename = f"{safe_name}.png"
-
-                upload_file_to_drive(drive_service, img_byte_arr, filename, target_folder_id)
+                upload_file_to_drive(drive_service, img_byte_arr, f"{clean_filename(raw_name)}.png", target_folder_id)
                 count += 1
 
-        return jsonify({
-            'success': True,
-            'message': f"تم توليد ورفع {count} شهادة بنجاح داخل مجلد Google Drive المسمى:\n{sub_folder_name}"
-        })
+        return jsonify({'success': True, 'message': f"تم توليد ورفع {count} شهادة بنجاح داخل المجلد:\n{sub_folder_name}"})
 
     except Exception as e:
-        return jsonify({'success': False, 'message': f'حدث خطأ أثناء التوليد والرفع: {str(e)}'})
+        return jsonify({'success': False, 'message': f'حدث خطأ: {str(e)}'})
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)
