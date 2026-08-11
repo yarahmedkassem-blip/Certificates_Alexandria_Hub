@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CREATIVA Alexandria Certificate Generator</title>
+    <!-- تم تعديل المسار ليعمل تلقائياً مع Vercel و Flask -->
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <!-- 1. الشريط العلوي للشعارات -->
+    <header class="top-bar">
+        <div class="logos-container">
+            <img src="/creativa-logo.png" alt="Creativa Logo" class="logo-img">
+        </div>
+    </header>
+
+    <!-- 2. البنر الأزرق الرئيسي -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <h1>CREATIVA ALEXANDRIA CERTIFICATE GENERATOR</h1>
+        </div>
+    </section>
+
+    <!-- 3. منطقة نموذج العمل الرئيسي -->
+    <main class="main-container">
+        <div class="cards-grid">
+            
+            <div class="card card-active">
+                <div class="card-header">
+                    <h2>CREATIVA ALEXANDRIA</h2>
+                    <p>نظام توليد وتصدير الشهادات الرقمية عبر Google Drive</p>
+                </div>
+
+                <form id="certForm" enctype="multipart/form-data">
+                    
+                    <div class="input-field">
+                        <label for="drive_folder_id">Google Drive Folder ID (معرف مجلد الدرايف):</label>
+                        <input type="text" id="drive_folder_id" name="drive_folder_id" placeholder="مثال: 1aB2c3D4e5F6g7H8i9..." required>
+                    </div>
+
+                    <div class="input-field">
+                        <label for="folder_name">اسم فولدر الدفعة داخل الدرايف (اختياري):</label>
+                        <input type="text" id="folder_name" name="folder_name" placeholder="مثال: دفعة_الذكاء_الاصطناعي">
+                    </div>
+
+                    <div class="input-field">
+                        <label for="template">صورة القالب (PNG / JPG):</label>
+                        <input type="file" id="template" name="template" accept="image/png, image/jpeg" required>
+                    </div>
+
+                    <div class="input-field">
+                        <label for="csv">ملف الأسماء (CSV):</label>
+                        <input type="file" id="csv" name="csv" accept=".csv" required>
+                    </div>
+
+                    <div class="input-field">
+                        <label for="font">ملف الخط (TTF):</label>
+                        <input type="file" id="font" name="font" accept=".ttf, .otf" required>
+                    </div>
+
+                    <div id="status">يرجى تعبئة البيانات ورفع الملفات للبدء</div>
+
+                    <button type="submit" id="btnStart" class="btn-action">Generate & Upload to Drive</button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 4. الشريط السفلي -->
+    <footer class="footer-bar">
+        <a href="javascript:void(0)" onclick="openModal('aboutModal')">About Us</a>
+        <a href="javascript:void(0)" onclick="openModal('contactModal')">Contact</a>
+        <a href="#">FAQ</a>
+        <a href="#">Privacy Policy</a>
+    </footer>
+
+    <div id="aboutModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('aboutModal')">&times;</span>
+            <h2>عن النظام - About Us</h2>
+            <p>نظام توليد الشهادات الرقمية المعتمد لـ CREATIVA Alexandria. يهدف النظام إلى إصدار وتوثيق الشهادات الرقمية للمشاريع والبرامج التدريبية بكل سهولة وأمان.</p>
+        </div>
+    </div>
+
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
+            <h2>تواصل معنا - Contact Us</h2>
+            <p>مركز إبداع مصر الرقمية - الإسكندرية (CREATIVA Alexandria)</p>
+            <p> Mobile Phone : 01131567326  </p>
+            <p>📍 العنوان: الإسكندرية، مصر</p>
+        </div>
+    </div>
+
+    <!-- تم تعديل المسار هنا أيضاً -->
+    <script src="/script.js"></script>
+</body>
+</html>

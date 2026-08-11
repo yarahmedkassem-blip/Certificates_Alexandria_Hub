@@ -1,0 +1,8 @@
+Flask
+pandas
+Pillow
+arabic_reshaper
+python-bidi
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
